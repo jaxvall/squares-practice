@@ -30,7 +30,7 @@ class SquaresTester:
         self.timer_display = tk.Label(root, textvariable=self.timer_label, width=10)
         self.timer_display.grid(row=0, column=2, padx=(10, 10), pady=10, sticky="ne")
 
-        self.question_label = tk.Label(root, text='Press the button to start!', width=20, anchor="w")
+        self.question_label = tk.Label(root, text='Press the button to start!', height=2, width=20, anchor="w")
         self.question_label.grid(row=1, column=1, columnspan=2, padx=0, pady=10, sticky="w")
 
         self.answer_entry = tk.Entry(root, width=20)
@@ -65,10 +65,9 @@ class SquaresTester:
     
     
     def update_high_score(self):
-        if self.current_score > int(self.read_high_score()):
-            with open('high_score.txt', 'w') as f:
-                f.write(str(self.current_score))
-            self.high_score_label.config(text=f'Best: {self.read_high_score()}')
+        with open('high_score.txt', 'w') as f:
+            f.write(str(self.current_score))
+        self.high_score_label.config(text=f'Best: {self.read_high_score()}')
             
     
     def update_timer(self):
@@ -138,9 +137,13 @@ class SquaresTester:
     
     
     def end_game(self):
-        self.question_label.config(text="Game Over!")
+        if self.current_score > int(self.read_high_score()):
+            self.update_high_score()
+            self.question_label.config(text="Game Over!\nNew High Score!")
+        else:
+            self.question_label.config(text="Game Over!")
+        
         self.game_started = False
-        self.update_high_score()
         
         self.current_score = 0
         self.current_score_label.set(f'Score: {self.current_score}')
