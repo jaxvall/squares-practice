@@ -36,6 +36,7 @@ class SquaresTester:
         self.answer_entry = tk.Entry(root, width=20)
         self.answer_entry.grid(row=2, column=1, padx=0, pady=(2, 0))
         self.answer_entry.bind("<Return>", self.button_pressed)
+        self.answer_entry.bind("<space>", self.button_pressed)
         self.answer_entry.focus_set()
 
         self.submit_button = tk.Button(root, text="Start", command=self.button_pressed)
