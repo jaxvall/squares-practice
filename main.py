@@ -22,7 +22,7 @@ class SquaresTester:
         self.game_started = False
 
         self.current_score = 0
-        self.current_score_label = tk.StringVar(value=f"Score: {self.current_score}")
+        self.score_label_var = tk.StringVar(value="")
 
         self.time_left = 31
         self.timer_label = tk.StringVar(value="")
@@ -44,13 +44,16 @@ class SquaresTester:
         )
         self.high_score_label.grid(row=0, column=0, padx=(10, 30), pady=10, sticky="nw")
 
+        self.end_button = tk.Button(root, text="End game", command=self.end_game)
+        self.end_button.grid(row=5, column=0, padx=(10, 0), pady=10, sticky="w")
+        self.end_button.config(state=tk.DISABLED)
+
         self.score_label = tk.Label(
             root,
-            text=self.current_score_label,
-            textvariable=self.current_score_label,
+            textvariable=self.score_label_var,
+            width=15,
         )
         self.score_label.grid(row=0, column=1, padx=(10, 10), pady=10, sticky="ew")
-        self.score_label.grid_remove()
 
         self.timer_display = tk.Label(root, textvariable=self.timer_label, width=10)
         self.timer_display.grid(row=0, column=2, padx=(0, 0), pady=10, sticky="ne")
@@ -59,9 +62,10 @@ class SquaresTester:
             root,
             text="Press the button to start!",
             height=2,
-            width=20,
+            width=21,
             anchor="w",
         )
+
         self.question_label.grid(
             row=1,
             column=1,
@@ -73,11 +77,15 @@ class SquaresTester:
 
         self.answer_entry = tk.Entry(root, width=20)
         self.answer_entry.grid(row=2, column=1, padx=0, pady=(2, 0))
-        self.answer_entry.bind("<Return>", self.button_pressed)
-        self.answer_entry.bind("<space>", self.button_pressed)
+        self.answer_entry.bind("<Return>", self.submit_button_pressed)
+        self.answer_entry.bind("<space>", self.submit_button_pressed)
         self.answer_entry.focus_set()
 
-        self.submit_button = tk.Button(root, text="Start", command=self.button_pressed)
+        self.submit_button = tk.Button(
+            root,
+            text="Start",
+            command=self.submit_button_pressed,
+        )
         self.submit_button.grid(row=2, column=2, padx=(10, 0), pady=10, sticky="w")
 
         self.question_type_var = tk.StringVar(value="squares")
@@ -91,7 +99,7 @@ class SquaresTester:
             row=0,
             column=3,
             padx=(10, 0),
-            pady=(15, 0),
+            pady=(10, 0),
             sticky="nw",
         )
 
@@ -147,7 +155,7 @@ class SquaresTester:
             sticky="nw",
         )
 
-        self.range_max_value = tk.IntVar(value=75)
+        self.range_max_value = tk.IntVar(value=99)
         self.range_max_entry = tk.Entry(
             root,
             textvariable=self.range_max_value,
@@ -207,7 +215,19 @@ class SquaresTester:
         elif self.game_started:
             self.end_game()
 
-    def button_pressed(self, _: tk.Event | None = None) -> None:
+    def shake_answer_entry(self) -> None:
+        """Shake the answer entry widget to indicate a wrong answer."""
+        x, y = self.answer_entry.winfo_x(), self.answer_entry.winfo_y()
+        for _ in range(4):
+            for dx in (-5, 5):
+                self.answer_entry.place(x=x + dx, y=y)
+                self.answer_entry.update()
+                self.root.after(
+                    20,
+                )
+        self.answer_entry.place(x=x, y=y)
+
+    def submit_button_pressed(self, _: tk.Event | None = None) -> None:
         """Handle the button press event."""
         if self.game_started:
             self.submit_answer()
@@ -223,6 +243,7 @@ class SquaresTester:
             return
 
         self.practice_mode_checkbox.config(state=tk.DISABLED)
+        self.end_button.config(state=tk.NORMAL)
 
         self.answer_entry.focus_set()
 
@@ -233,8 +254,7 @@ class SquaresTester:
         )
 
         self.current_score = 0
-        self.current_score_label.set(f"Score: {self.current_score}")
-        self.score_label.grid()
+        self.score_label_var.set(f"Score: {self.current_score}")
 
         if not self.practice_mode_checkbox_var.get():
             self.time_left = 31
@@ -254,27 +274,28 @@ class SquaresTester:
             for number in numbers_list:
                 question = f"What is {number}^2?"
                 answer = number**2
-                self.questions.append({"question": question, "answer": answer})
+                self.questions.append({"question": question, "answer": str(answer)})
 
         if self.question_type_var.get() == "roots":
             for number in numbers_list:
                 question = f"What is square root of {number**2}?"
                 answer = number
-                self.questions.append({"question": question, "answer": answer})
+                self.questions.append({"question": question, "answer": str(answer)})
 
         random.shuffle(self.questions)
 
     def submit_answer(self, _: tk.Event | None = None) -> None:
         """Process the answer to the current question."""
-        try:
-            answer = int(self.answer_entry.get().strip())
-        except ValueError:
-            answer = None
-
+        answer = self.answer_entry.get().strip()
         correct_answer = self.questions[self.current_question_index]["answer"]
+
+        self.answer_entry.delete(0, tk.END)
+
         if answer == correct_answer:
             self.current_score += 1
-        self.current_score_label.set(f"Score: {self.current_score}")
+            self.score_label_var.set(f"Score: {self.current_score}")
+        else:
+            self.shake_answer_entry()
 
         self.current_question_index += 1
         if self.current_question_index < len(self.questions):
@@ -284,10 +305,11 @@ class SquaresTester:
         else:
             self.end_game()
 
-        self.answer_entry.delete(0, tk.END)
-
     def end_game(self) -> None:
         """End the game."""
+        if not self.game_started:
+            return
+
         if (
             self.current_score > int(self.read_high_score())
             and not self.practice_mode_checkbox_var.get()
@@ -298,6 +320,7 @@ class SquaresTester:
             self.question_label.config(text="Game Over!")
 
         self.practice_mode_checkbox.config(state=tk.NORMAL)
+        self.end_button.config(state=tk.DISABLED)
 
         self.game_started = False
 
