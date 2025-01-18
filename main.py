@@ -27,6 +27,8 @@ class SquaresTester:
         self.time_left = 31
         self.timer_label = tk.StringVar(value="")
 
+        self.high_score = self.read_high_score()
+
         self.root = root
         self.root.title("Squares Practice")
 
@@ -35,7 +37,11 @@ class SquaresTester:
 
     def initialize_widgets(self) -> None:
         """Initialize the widgets for the application."""
-        self.high_score_label = tk.Label(root, text=f"Best: {self.read_high_score()}")
+        self.high_score_label = tk.Label(
+            root,
+            text=f"Best: {self.high_score}",
+            width=6,
+        )
         self.high_score_label.grid(row=0, column=0, padx=(10, 30), pady=10, sticky="nw")
 
         self.score_label = tk.Label(
@@ -177,17 +183,19 @@ class SquaresTester:
             return f.read()
 
     def update_high_score(self) -> None:
-        """Update the high score in the high_score.txt file."""
+        """Update the high score label and in the file."""
         with Path.open("high_score.txt", "w") as f:
             f.write(str(self.current_score))
-        self.high_score_label.config(text=f"Best: {self.read_high_score()}")
+
+        self.high_score = self.current_score
+        self.high_score_label.config(text=f"Best: {self.high_score}")
 
     def update_high_score_visibility(self) -> None:
         """Update visibility of high score label depending on which mode is selected."""
         if self.practice_mode_checkbox_var.get():
-            self.high_score_label.grid_remove()
+            self.high_score_label.config(text="")
         else:
-            self.high_score_label.grid()
+            self.high_score_label.config(text=f"Best: {self.high_score}")
 
     def update_timer(self) -> None:
         """Update the timer label every second."""
@@ -223,6 +231,9 @@ class SquaresTester:
         self.question_label.config(
             text=self.questions[self.current_question_index]["question"],
         )
+
+        self.current_score = 0
+        self.current_score_label.set(f"Score: {self.current_score}")
         self.score_label.grid()
 
         if not self.practice_mode_checkbox_var.get():
@@ -289,9 +300,6 @@ class SquaresTester:
         self.practice_mode_checkbox.config(state=tk.NORMAL)
 
         self.game_started = False
-
-        self.current_score = 0
-        self.current_score_label.set(f"Score: {self.current_score}")
 
         self.time_left = 0
         self.timer_label.set("")
