@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import random
 import tkinter as tk
 from pathlib import Path
@@ -21,13 +22,28 @@ class SquaresTester:
         self.current_question_index = 0
         self.game_started = False
 
+        self.submit_button_text_var = tk.StringVar(value="Start")
+
+        self.question_label_var = tk.StringVar(value="Press the button to start!")
+
+        self.high_score_title = "Best"
+
+        try:
+            self.high_score = self.read_high_score()
+        except FileNotFoundError:
+            self.high_score = 0
+            self.high_score_title = "Session best"
+
+        self.high_score_label_var = tk.StringVar(
+            value=f"{self.high_score_title}: {self.high_score}",
+        )
+
         self.current_score = 0
         self.score_label_var = tk.StringVar(value="")
 
-        self.time_left = 31
-        self.timer_label = tk.StringVar(value="")
-
-        self.high_score = self.read_high_score()
+        self.START_TIME = 30
+        self.time_left = 0
+        self.timer_label_var = tk.StringVar(value="")
 
         self.root = root
         self.root.title("Squares Practice")
@@ -39,10 +55,11 @@ class SquaresTester:
         """Initialize the widgets for the application."""
         self.high_score_label = tk.Label(
             root,
-            text=f"Best: {self.high_score}",
-            width=6,
+            textvariable=self.high_score_label_var,
+            width=12,
+            anchor="w",
         )
-        self.high_score_label.grid(row=0, column=0, padx=(10, 30), pady=10, sticky="nw")
+        self.high_score_label.grid(row=0, column=0, padx=(10, 20), pady=10, sticky="nw")
 
         self.end_button = tk.Button(root, text="End game", command=self.end_game)
         self.end_button.grid(row=5, column=0, padx=(10, 0), pady=10, sticky="w")
@@ -55,14 +72,14 @@ class SquaresTester:
         )
         self.score_label.grid(row=0, column=1, padx=(10, 10), pady=10, sticky="ew")
 
-        self.timer_display = tk.Label(root, textvariable=self.timer_label, width=10)
-        self.timer_display.grid(row=0, column=2, padx=(0, 0), pady=10, sticky="ne")
+        self.timer_label = tk.Label(root, textvariable=self.timer_label_var, width=10)
+        self.timer_label.grid(row=0, column=2, padx=(0, 0), pady=10, sticky="ne")
 
         self.question_label = tk.Label(
             root,
-            text="Press the button to start!",
+            textvariable=self.question_label_var,
             height=2,
-            width=21,
+            width=20,
             anchor="w",
         )
 
@@ -83,7 +100,7 @@ class SquaresTester:
 
         self.submit_button = tk.Button(
             root,
-            text="Start",
+            textvariable=self.submit_button_text_var,
             command=self.submit_button_pressed,
         )
         self.submit_button.grid(row=2, column=2, padx=(10, 0), pady=10, sticky="w")
@@ -116,7 +133,7 @@ class SquaresTester:
             root,
             text="Practice mode",
             variable=self.practice_mode_checkbox_var,
-            command=self.update_high_score_visibility,
+            command=self.update_labels_visibility,
         )
         self.practice_mode_checkbox.grid(
             row=2,
@@ -187,30 +204,39 @@ class SquaresTester:
             str: The high score read from the file.
 
         """
-        with Path.open("high_score.txt") as f:
-            return f.read()
+        with Path.open("files/high_score.txt") as f:
+            return int(f.read())
 
     def update_high_score(self) -> None:
         """Update the high score label and in the file."""
-        with Path.open("high_score.txt", "w") as f:
-            f.write(str(self.current_score))
+        try:
+            with Path.open("files/high_score.txt") as _:
+                pass
+            with Path.open("files/high_score.txt", "w") as f:
+                f.write(str(self.current_score))
+        except FileNotFoundError:
+            pass
 
         self.high_score = self.current_score
-        self.high_score_label.config(text=f"Best: {self.high_score}")
+        self.high_score_label_var.set(f"{self.high_score_title}: {self.high_score}")
 
-    def update_high_score_visibility(self) -> None:
-        """Update visibility of high score label depending on which mode is selected."""
+    def update_labels_visibility(self) -> None:
+        """Update label visibility based on game mode checkbox state.
+
+        If practice mode is enabled, hide the high score label and timer label.
+        """
         if self.practice_mode_checkbox_var.get():
-            self.high_score_label.config(text="")
+            self.high_score_label_var.set("")
+            self.timer_label_var.set("")
         else:
-            self.high_score_label.config(text=f"Best: {self.high_score}")
+            self.high_score_label_var.set(f"{self.high_score_title}: {self.high_score}")
 
     def update_timer(self) -> None:
         """Update the timer label every second."""
+        self.timer_label_var.set(f"Time left: {self.time_left}")
         if self.time_left > 0:
-            self.time_left -= 1
-            self.timer_label.set(f"Time left: {self.time_left}")
             self.root.after(1000, self.update_timer)
+            self.time_left -= 1
 
         elif self.game_started:
             self.end_game()
@@ -248,17 +274,16 @@ class SquaresTester:
         self.answer_entry.focus_set()
 
         self.game_started = True
-        self.submit_button.config(text="Submit")
-        self.question_label.config(
-            text=self.questions[self.current_question_index]["question"],
+        self.submit_button_text_var.set("Submit")
+        self.question_label_var.set(
+            self.questions[self.current_question_index]["question"],
         )
 
         self.current_score = 0
         self.score_label_var.set(f"Score: {self.current_score}")
 
         if not self.practice_mode_checkbox_var.get():
-            self.time_left = 31
-            self.timer_label.set(f"Time left: {self.time_left}")
+            self.time_left = self.START_TIME
             self.update_timer()
 
     def generate_questions(self) -> None:
@@ -278,7 +303,7 @@ class SquaresTester:
 
         if self.question_type_var.get() == "roots":
             for number in numbers_list:
-                question = f"What is square root of {number**2}?"
+                question = f"What is the square root of\n{number**2}?"
                 answer = number
                 self.questions.append({"question": question, "answer": str(answer)})
 
@@ -299,8 +324,8 @@ class SquaresTester:
 
         self.current_question_index += 1
         if self.current_question_index < len(self.questions):
-            self.question_label.config(
-                text=self.questions[self.current_question_index]["question"],
+            self.question_label_var.set(
+                self.questions[self.current_question_index]["question"],
             )
         else:
             self.end_game()
@@ -311,38 +336,42 @@ class SquaresTester:
             return
 
         if (
-            self.current_score > int(self.read_high_score())
+            self.current_score > self.high_score
             and not self.practice_mode_checkbox_var.get()
         ):
             self.update_high_score()
-            self.question_label.config(text="Game Over!\nNew High Score!")
+            self.question_label_var.set("Game Over!\nNew High Score!")
         else:
-            self.question_label.config(text="Game Over!")
+            self.question_label_var.set("Game Over!")
 
         self.practice_mode_checkbox.config(state=tk.NORMAL)
         self.end_button.config(state=tk.DISABLED)
 
         self.game_started = False
 
-        self.time_left = 0
-        self.timer_label.set("")
+        if not self.practice_mode_checkbox_var.get():
+            self.time_left = 0
+            self.timer_label_var.set(f"Time left: {self.time_left}")
+
         self.current_question_index = 0
         self.questions.clear()
 
-        self.submit_button.config(text="Restart")
+        self.submit_button_text_var.set("Restart")
 
     def display_error(self, message: str) -> None:
         """Display an error message on the question label."""
         current_text = self.question_label.cget("text")
-        self.question_label.config(text=message)
+        self.question_label_var.set(message)
         self.root.after(2000, self.reset_question_label, current_text)
 
     def reset_question_label(self, text: str) -> None:
         """Reset the question label to the previous text."""
-        self.question_label.config(text=text)
+        self.question_label_var.set(text)
 
 
 if __name__ == "__main__":
     root = tk.Tk()
+    with contextlib.suppress(tk.TclError):
+        root.iconbitmap("files/root_square.ico")
     app = SquaresTester(root)
     root.mainloop()
