@@ -1,4 +1,4 @@
-"""A simple application to practice squares and square roots using a Tkinter GUI."""
+"""A simple application to practice squares and square roots."""
 
 from __future__ import annotations
 
@@ -22,9 +22,13 @@ class SquaresTester:
         self.current_question_index = 0
         self.game_started = False
 
+        self.RANGE_MAX_VALUE = 10000
+
         self.submit_button_text_var = tk.StringVar(value="Start")
 
-        self.question_label_var = tk.StringVar(value="Press the button to start!")
+        self.question_label_var = tk.StringVar(
+            value="Press the button, [Enter]\n or [Space] to start!",
+        )
 
         self.high_score_title = "Best"
 
@@ -143,7 +147,7 @@ class SquaresTester:
             sticky="nw",
         )
 
-        self.range_label = tk.Label(root, text="Number Range:")
+        self.range_label = tk.Label(root, text="Number range:")
         self.range_label.grid(row=3, column=3, padx=(12, 10), pady=(5, 5), sticky="nw")
 
         self.min_label = tk.Label(root, text="Min")
@@ -253,20 +257,24 @@ class SquaresTester:
                 )
         self.answer_entry.place(x=x, y=y)
 
-    def submit_button_pressed(self, _: tk.Event | None = None) -> None:
+    def submit_button_pressed(self, _: tk.Event | None = None) -> str:
         """Handle the button press event."""
         if self.game_started:
             self.submit_answer()
         else:
             self.start_game()
 
+        return "break"
+
     def start_game(self, _: tk.Event | None = None) -> None:
         """Start the game."""
         try:
             self.generate_questions()
-        except (tk.TclError, IndexError):
-            self.display_error("Invalid number range!")
+        except NumberRangeError as e:
+            self.display_error(e)
             return
+
+        self.answer_entry.delete(0, tk.END)
 
         self.practice_mode_checkbox.config(state=tk.DISABLED)
         self.end_button.config(state=tk.NORMAL)
@@ -288,12 +296,29 @@ class SquaresTester:
 
     def generate_questions(self) -> None:
         """Generate the questions based on the selected question type."""
-        numbers_list = list(
-            range(self.range_min_value.get(), self.range_max_value.get() + 1),
-        )
-        numbers_list[1]
+        try:
+            selected_min_value = self.range_min_value.get()
+            selected_max_value = self.range_max_value.get()
 
-        random.shuffle(numbers_list)
+        except tk.TclError:
+            msg = "Invalid number range!"
+            raise NumberRangeError(msg) from None
+
+        if selected_min_value < 1:
+            msg = "Min range value cannot\nbe below 1!"
+            raise NumberRangeError(msg)
+
+        if selected_max_value > self.RANGE_MAX_VALUE:
+            msg = "Max range value cannot\nbe above 10 000 !"
+            raise NumberRangeError(msg)
+
+        numbers_list = list(
+            range(selected_min_value, selected_max_value + 1),
+        )
+
+        if len(numbers_list) < 1:
+            msg = "Invalid number range!"
+            raise NumberRangeError(msg)
 
         if self.question_type_var.get() == "squares":
             for number in numbers_list:
@@ -332,8 +357,7 @@ class SquaresTester:
 
     def end_game(self) -> None:
         """End the game."""
-        if not self.game_started:
-            return
+        self.answer_entry.delete(0, tk.END)
 
         if (
             self.current_score > self.high_score
@@ -369,9 +393,18 @@ class SquaresTester:
         self.question_label_var.set(text)
 
 
+class NumberRangeError(Exception):
+    """Raised when the number range is invalid."""
+
+    def __init__(self, message: str) -> None:
+        """Initialize the exception."""
+        super().__init__(message)
+
+
 if __name__ == "__main__":
     root = tk.Tk()
     with contextlib.suppress(tk.TclError):
         root.iconbitmap("files/root_square.ico")
-    app = SquaresTester(root)
+    SquaresTester(root)
+    root.resizable(width=False, height=False)
     root.mainloop()
