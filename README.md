@@ -6,7 +6,7 @@ A simple application where you can practice squares of numbers up to four digits
 
 ## Installation and usage
 
-If you're on Windows or Mac, you can download ([Windows](https://github.com/jaxvall/squares-practice/releases/latest/squares-practice.exe), [Mac](https://github.com/jaxvall/squares-practice/releases/latest/squares-practice.zip)) a standalone executable which you can run without having Python installed. 
+If you're on Windows or Mac, you can download ([Windows](https://github.com/jaxvall/squares-practice/releases/latest/download/squares-practice.exe), [Mac](https://github.com/jaxvall/squares-practice/releases/latest/download/squares-practice.zip)) a standalone executable which you can run without having Python installed. 
 
 In case you want to run the source code, download it from the [releases section](https://github.com/jaxvall/squares-practice/releases/latest) or clone the repo.
 
