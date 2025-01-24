@@ -72,9 +72,9 @@ class SquaresTester:
         self.score_label = tk.Label(
             root,
             textvariable=self.score_label_var,
-            width=15,
+            width=21,
         )
-        self.score_label.grid(row=0, column=1, padx=(10, 10), pady=10, sticky="ew")
+        self.score_label.grid(row=0, column=1, padx=(0, 0), pady=10, sticky="ew")
 
         self.timer_label = tk.Label(root, textvariable=self.timer_label_var, width=10)
         self.timer_label.grid(row=0, column=2, padx=(0, 0), pady=10, sticky="ne")
@@ -84,16 +84,15 @@ class SquaresTester:
             textvariable=self.question_label_var,
             height=2,
             width=20,
-            anchor="w",
+            anchor="center",
         )
 
         self.question_label.grid(
             row=1,
             column=1,
-            columnspan=2,
-            padx=0,
+            padx=(0, 3),
             pady=10,
-            sticky="w",
+            sticky="ew",
         )
 
         self.answer_entry = tk.Entry(root, width=20)
